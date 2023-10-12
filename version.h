@@ -5,6 +5,7 @@
 #define VER_FLAGS   VS_FF_PRERELEASE
 
 
+
 // The Binary form of the version numbers
 #define VER_FILE    VER_MAJOR, VER_MINOR, VER_BUILD_HI, VER_BUILD_LO
 #define VER_PRODUCT VER_MAJOR, VER_MINOR, VER_BUILD_HI, VER_BUILD_LO
