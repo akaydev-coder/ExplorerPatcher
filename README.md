@@ -1,3 +1,4 @@
+[![GitHub all releases](https://img.shields.io/github/downloads/indiff/ExplorerPatcher/total)]
 # ExplorerPatcher
 This project aims to enhance the working environment on Windows.
 
