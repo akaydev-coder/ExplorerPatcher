@@ -89,7 +89,7 @@ DWORD bMonitorOverride = TRUE;
 DWORD bOpenAtLogon = FALSE;
 DWORD bClockFlyoutOnWinC = FALSE;
 DWORD bUseClassicDriveGrouping = FALSE;
-DWORD dwFileExplorerCommandUI = 9999;
+/*DWORD dwFileExplorerCommandUI = 9999;*/
 DWORD bLegacyFileTransferDialog = FALSE;
 DWORD bDisableImmersiveContextMenu = FALSE;
 DWORD bClassicThemeMitigations = FALSE;
@@ -3891,6 +3891,23 @@ HWND WINAPI explorerframe_SHCreateWorkerWindowHook(
     }
     if (dwExStyle == 0x10000 && dwStyle == 0x46000000 && result)
     {
+#ifdef USE_PRIVATE_INTERFACES
+        if (result) // bMicaEffectOnTitlebar && result
+        {
+            BOOL value = TRUE;
+            SetPropW(hWndParent, L"NavBarGlass", HANDLE_FLAG_INHERIT);
+
+            int v8 = (unsigned __int8)CheckIfBuild22523OrHigher() != 0 ? 0xFFFFFC21 : 0;
+            int pvAttribute = ((unsigned __int8)CheckIfBuild22523OrHigher() != 0) + 1;
+
+            HRESULT hr = DwmSetWindowAttribute(hWndParent, v8 + 1029, &pvAttribute, 4);
+            if (hr != 0)
+            {
+                printf("DwmSetWindowAttribute() failure: %d\n", hr);
+            }
+            if (result) SetWindowSubclass(result, ExplorerMicaTitlebarSubclassProc, ExplorerMicaTitlebarSubclassProc, 0);
+        }
+#endif
         if (bHideIconAndTitleInExplorer)
         {
             SetWindowSubclass(hWndParent, HideIconAndTitleInExplorerSubClass, HideIconAndTitleInExplorerSubClass, 0);
@@ -6180,7 +6197,7 @@ void WINAPI LoadSettings(LPARAM lParam)
             NULL,
             &bUseClassicDriveGrouping,
             &dwSize
-        );
+        );/*
         dwSize = sizeof(DWORD);
         RegQueryValueExW(
             hKey,
@@ -6202,7 +6219,7 @@ void WINAPI LoadSettings(LPARAM lParam)
             {
                 dwFileExplorerCommandUI = 0;
             }
-        }
+        }*/
         dwSize = sizeof(DWORD);
         RegQueryValueExW(
             hKey,
@@ -8592,7 +8609,7 @@ HRESULT shell32_DriveTypeCategorizer_CreateInstanceHook(IUnknown* pUnkOuter, REF
 #endif
 #pragma endregion
 
-
+/*
 #pragma region "File Explorer command bar and ribbon support"
 DEFINE_GUID(CLSID_XamlIslandViewAdapter,
     0x6480100B,
@@ -8625,7 +8642,7 @@ HRESULT ExplorerFrame_CoCreateInstanceHook(REFCLSID rclsid, LPUNKNOWN pUnkOuter,
     return CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv);
 }
 #pragma endregion
-
+*/
 
 #pragma region "Change language UI style"
 #ifdef _WIN64
@@ -9301,6 +9318,18 @@ BOOL twinui_RegisterHotkeyHook(HWND hWnd, int id, UINT fsModifiers, UINT vk)
 }
 #pragma endregion
 
+HRESULT(*DWMExtendFrameFunc)(HWND hWnd, MARGINS* m);
+HRESULT DWMExtendFrameHook(HWND hWnd, MARGINS* m)
+{
+    if (GetPropW(hWnd, L"NavBarGlass"))
+    {
+        //Do nothing, as explorer will reset the frame back to default
+    }
+    else
+    {
+        return DwmExtendFrameIntoClientArea(hWnd, m);
+    }
+}
 
 #pragma region "Fix taskbar thumbnails and acrylic in newer OS builds (22572+)"
 #ifdef _WIN64
@@ -9664,7 +9693,7 @@ int RtlQueryFeatureConfigurationHook(UINT32 featureId, int sectionType, INT64* c
 #if 1
         case 40729001: // WASDKInFileExplorer
         {
-            if (dwFileExplorerCommandUI != 0)
+            if (bOldTaskbar)
             {
                 // Disable the new Windows App SDK views (in Home and Gallery) when not using the Windows 11 command bar
                 //
@@ -9788,7 +9817,7 @@ DWORD InjectBasicFunctions(BOOL bIsExplorer, BOOL bInstall)
             }
             VnPatchIAT(hExplorerFrame, "API-MS-WIN-CORE-STRING-L1-1-0.DLL", "CompareStringOrdinal", ExplorerFrame_CompareStringOrdinal);
             VnPatchIAT(hExplorerFrame, "user32.dll", "GetSystemMetricsForDpi", explorerframe_GetSystemMetricsForDpi);
-            VnPatchIAT(hExplorerFrame, "api-ms-win-core-com-l1-1-0.dll", "CoCreateInstance", ExplorerFrame_CoCreateInstanceHook);
+            /*VnPatchIAT(hExplorerFrame, "api-ms-win-core-com-l1-1-0.dll", "CoCreateInstance", explorerframe_CoCreateInstanceHook); */
         }
         else
         {
